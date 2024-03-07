@@ -1,3 +1,6 @@
+const dotenv = require("dotenv");
+dotenv.config();
+
 const express = require("express");
 const app = express();
 app.use(express.json());
@@ -16,35 +19,14 @@ app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body")
 );
 
-let persons = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
+const Person = require("./models/person");
 
 app.get("/", (request, response) => {
   response.send("<h1>Phonebook App</h1>");
 });
 
 app.get("/api/persons", (request, response) => {
-  response.json(persons);
+  Person.find({}).then((persons) => response.json(persons));
 });
 
 app.get("/api/persons/:id", (request, response) => {
@@ -79,34 +61,15 @@ app.delete("/api/persons/:id", (request, response) => {
 app.post("/api/persons", (request, response) => {
   const body = request.body;
 
-  const duplicates = persons.filter((p) => p.name === body.name);
-  console.log(persons, body.name);
-
-  if (!body.name) {
-    return response.status(400).json({
-      error: "The name is missing",
-    });
-  } else if (!body.number) {
-    return response.status(400).json({
-      error: "The number is missing",
-    });
-  } else if (duplicates.length > 0) {
-    return response.status(400).json({
-      error: "The name must be unique",
-    });
-  }
-
-  const newPerson = {
-    id: Math.random().toFixed(3) * 1000,
+  const person = new Person({
     name: body.name,
     number: body.number,
-  };
+  });
 
-  persons = persons.concat(newPerson);
-  response.json(newPerson);
+  person.save().then((person) => response.json(person));
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
