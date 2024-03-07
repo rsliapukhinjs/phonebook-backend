@@ -4,7 +4,6 @@ dotenv.config();
 const express = require("express");
 const app = express();
 app.use(express.json());
-
 app.use(express.static("dist"));
 
 const cors = require("cors");
@@ -14,7 +13,6 @@ const morgan = require("morgan");
 morgan.token("body", function (req, res) {
   return JSON.stringify(req.body);
 });
-
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body")
 );
@@ -30,32 +28,27 @@ app.get("/api/persons", (request, response) => {
 });
 
 app.get("/api/persons/:id", (request, response) => {
-  const id = +request.params.id;
-  const person = persons.find((p) => p.id === id);
-
-  if (person) {
-    response.json(person);
-  } else {
-    response.status(404).end();
-  }
+  Person.findById(request.params.id)
+    .then((person) => response.json(person))
+    .catch((error) => next(error));
 });
 
 app.get("/info", (request, response) => {
-  const html = `
+  Person.find({}).then((persons) => {
+    const html = `
         <p>Phonebook has info about ${persons.length} people</p>
         <p>${new Date().toUTCString()}</p>
     `;
-
-  response.send(html);
+    response.send(html);
+  });
 });
 
-app.delete("/api/persons/:id", (request, response) => {
-  const id = +request.params.id;
-  console.log(id);
-  persons = persons.filter((person) => person.id !== id);
-  console.log(persons);
-
-  response.status(204).end();
+app.delete("/api/persons/:id", (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
 app.post("/api/persons", (request, response) => {
@@ -68,6 +61,30 @@ app.post("/api/persons", (request, response) => {
 
   person.save().then((person) => response.json(person));
 });
+
+app.put("/api/persons/:id", (request, response, next) => {
+  const body = request.body;
+
+  const person = {
+    name: body.name,
+    number: body.number,
+  };
+
+  Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then((updatedPerson) => response.json(updatedPerson))
+    .catch((error) => next(error));
+});
+
+const errorHandler = (error, request, response, next) => {
+  console.log(error);
+
+  if (error.name === "CasrError") {
+    return response.status(400).send({ error: "Wrong format id" });
+  }
+
+  next(error);
+};
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
