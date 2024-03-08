@@ -6,8 +6,22 @@ mongoose.set("strictQuery", false);
 mongoose.connect(url);
 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
+  name: {
+    type: String,
+    minLength: 3,
+    required: true,
+  },
+  number: {
+    type: String,
+    validate: {
+      validator: function (v) {
+        return /\d{2,3}-\d{0,10}/.test(v);
+      },
+      message: (props) =>
+        `${props.value} should be in 11-rest or 222-rest number format!`,
+    },
+    required: true,
+  },
 });
 
 personSchema.set("toJSON", {
