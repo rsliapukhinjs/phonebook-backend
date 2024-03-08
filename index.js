@@ -27,7 +27,7 @@ app.get("/api/persons", (request, response) => {
   Person.find({}).then((persons) => response.json(persons));
 });
 
-app.get("/api/persons/:id", (request, response) => {
+app.get("/api/persons/:id", (request, response, next) => {
   Person.findById(request.params.id)
     .then((person) => response.json(person))
     .catch((error) => next(error));
